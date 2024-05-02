@@ -36,8 +36,8 @@
           <div class="prisao">
             Data da Prisão 1: <input type="date" name="data_prisao[]"><br>
             Crimes:
-            <textarea name="crimes[]" rows="4" onblur="ordenarArtigos(this)"></textarea><br>
-            Valor da Multa: <input type="text" name="valor_multa[]" onblur="formatarValorMulta(this)"><br>
+            <textarea name="crimes[]" rows="4" onblur="ordenarArtigos(this); calcularValorMulta(this)"></textarea><br>
+            Valor da Multa: <input type="text" name="valor_multa[]" readonly><br>
           </div>
         </div>
         <button type="button" onclick="adicionarPrisao()">+</button><br>
@@ -56,6 +56,107 @@
     const copyButton = document.getElementById('copyButton');
     const prisoesContainer = document.getElementById('prisoesContainer');
 
+    // Objeto com os valores das multas para cada artigo
+    const valoresMulta = {
+      "Art. 0.1 - Azaralhamento": 100000,
+      "Art. 0.2 - Prisão Militar": 0,
+      "Art. 0.3 - Prevaricação": 100000,
+      "Art. 0.4 - Invasão de departamento policial": 100000,
+      "Art. 1.1 - Homicídio": 100000,
+      "Art. 1.2 - Tentativa de Homicídio": 100000,
+      "Art. 2.1 - Lesão Corporal": 50000,
+      "Art. 2.2 - Sequestro": 200000,
+      "Art. 2.3 - Cárcere Privado": 50000,
+      "Art. 3.1 - Furto": 50000,
+      "Art. 3.2 - Receptação de Veículos": 50000,
+      "Art. 3.3 - Tentativa de Furto": 30000,
+      "Art. 3.4 - Furto de Veículos": 40000,
+      "Art. 3.5 - Invasão de Propriedade": 40000,
+      "Art. 3.6 - Apropriação indébita": 40000,
+      "Art. 4.1 - Roubo": 100000,
+      "Art. 4.2 - Furto a Caixa Eletrônico": 50000,
+      "Art. 4.3 - Extorsão": 50000,
+      "Art. 5.1 - Posse de Peças de Armas": 50000,
+      "Art. 5.2 - Posse de Cápsulas": 50000,
+      "Art. 5.3 - Tráfico de Armas": 300000,
+      "Art. 5.4 - Porte de Arma Pesada": 200000,
+      "Art. 5.5 - Porte de Arma Leve": 100000,
+      "Art. 5.6 - Posse de Munição (-100)": 50000,
+      "Art. 5.7 - Posse de Arma Branca": 30000,
+      "Art. 5.8 - Tráfico de Munições (+100)": 100000,
+      "Art. 5.9 - Tráfico de equipamento balistico": 100000,
+      "Art. 6.1 - Aviãozinho (6 a 100)": 70000,
+      "Art. 6.2 - Posse de Componentes Narcóticos": 50000,
+      "Art. 6.3 - Posse de Drogas (1 a 5)": 30000,
+      "Art. 6.4 - Tráfico de Drogas (+100)": 100000,
+      "Art. 6.5 - Associação ao tráfico": 50000,
+      "Art. 7.1 - Dinheiro Sujo": 500,
+      "Art. 8.1 - Falsidade Ideológica": 125000,
+      "Art. 8.2 - Perjúrio": 10000,
+      "Art. 8.3 - Formação de Quadrilha": 150000,
+      "Art. 8.4 - Associação Criminosa": 65000,
+      "Art. 8.5 - Difamação": 30000,
+      "Art. 8.6 - Injúria": 30000,
+      "Art. 8.7 - Calúnia": 30000,
+      "Art. 10.0 - Posse de Arma em Público": 25000,
+      "Art. 10.1 - Ameaça": 100000,
+      "Art. 10.2 - Uso Indevido do 190/192": 50000,
+      "Art. 10.3 - Desobêdiencia 1": 50000,
+      "Art. 10.3 - Desobêdiencia 2": 50000,
+      "Art. 10.3 - Desobêdiencia 3": 50000,
+      "Art. 10.3 - Desobêdiencia 4": 50000,
+      "Art. 10.4 - Posse de Itens Ilegais": 50000,
+      "Art. 10.5 - Assédio": 150000,
+      "Art. 10.6 - Atentado ao Pudor": 50000,
+      "Art. 10.7 - Suborno": 50000,
+      "Art. 10.8 - Vandalismo": 50000,
+      "Art. 10.8.1 - Danos ao patrimônio público": 100000,
+      "Art. 10.9 - Abuso de Autoridade": 50000,
+      "Art. 10.10 - Uso de Máscara": 50000,
+      "Art. 10.11 - Uso de Equipamentos Restritos": 50000,
+            "Art. 10.12 - Apologia ao Crime": 100000,
+      "Art. 10.13 - Incitação ao Crime": 50000,
+      "Art. 10.14 - Falsa comunição de Crime": 50000,
+      "Art. 10.15 - Vadiagem": 5000,
+      "Art. 10.16 - Intoxicação pública": 4000,
+      "Art. 10.17 - Perturbação da ordem": 5000,
+      "Art. 10.18 - Perturbação do sossego alheio": 30000,
+      "Art. 10.19 - Omissão de socorro": 30000,
+      "Art. 10.20 - Tráfico de influência": 30000,
+      "Art. 10.21 - Obstrução de justiça": 50000,
+      "Art. 10.22 - Peculato": 100000,
+      "Art. 11.1 - Tentativa de Fuga": 50000,
+      "Art. 11.2 - Condução Imprudente": 30000,
+      "Art. 11.3 - Dirigir na Contra Mão": 30000,
+      "Art. 11.4 - Alta Velocidade": 50000,
+      "Art. 11.5 - Poluição Sonora": 50000,
+      "Art. 11.6 - Corridas Ilegais": 50000,
+      "Art. 11.7 - Sem capacete": 50000,
+      "Art. 11.8 - Suspensão veicular alterada": 50000,
+      "Art. 12.1 - Uso Excessivo de Insulfilm": 25000,
+      "Art. 12.2 - Veículo Muito Danificado": 25000,
+      "Art. 12.3 - Veiculo Ilegalmente Estacionado": 30000,
+      "Art. 12.4 - Homicídio Culposo no Trânsito": 45000,
+      "Art. 12.5 - Blindagem no pneu": 150000,
+      "Art. 15.1.1 - Desacato 1": 150000,
+      "Art. 15.1.2 - Desacato 2": 150000,
+      "Art. 15.1.3 - Desacato 3": 150000,
+      "Art. 15.1.4 - Desacato 4": 150000,
+      "Art. 15.2 - Resistência a Prisão": 0,
+      "Art. 15.3 - Réu Reincidente": 0,
+      "Art. 15.4 - Cúmplice": 15000,
+      "Art. 15.5 - Colisão Proposital a Viatura": 20000,
+      "Art. 15.6 - Contrabando": 200000,
+      "Art. 15.9 - Desmanche de Veiculos": 70000,
+      "Art. 16.1 - Disparo de Arma": 50000,
+      "Art. 16.2 - Descaminho": 100000,
+      "Art. 16.3 - Homicídio Doloso": 125000,
+      "Art. 16.4 - Homicídio Culposo": 100000,
+      "Art. 16.5 - Impedir o Fluxo do Tráfego": 15000,
+      "Art 16.6 - Ocultação de Provas": 50000,
+      "Art 16.7 - Zaralho em Recrutamento Policial": 100000
+    };
+
     // Função para adicionar um novo campo de prisão
     function adicionarPrisao() {
       const prisaoIndex = prisoesContainer.children.length + 1;
@@ -64,17 +165,25 @@
       prisaoDiv.innerHTML = `
         Data da Prisão ${prisaoIndex}: <input type="date" name="data_prisao[]"><br>
         Crimes:
-        <textarea name="crimes[]" rows="4" onblur="ordenarArtigos(this)"></textarea><br>
-        Valor da Multa: <input type="text" name="valor_multa[]" onblur="formatarValorMulta(this)"><br>
+        <textarea name="crimes[]" rows="4" onblur="ordenarArtigos(this); calcularValorMulta(this)"></textarea><br>
+        Valor da Multa: <input type="text" name="valor_multa[]" readonly><br>
       `;
       prisoesContainer.appendChild(prisaoDiv);
     }
 
-    // Função para formatar o valor da multa
-    function formatarValorMulta(input) {
-      let valor = input.value.replace(/\D/g, '');
-      valor = parseInt(valor) * 1000;
-      input.value = valor.toLocaleString('pt-BR');
+    // Função para calcular o valor da multa com base nos artigos
+    function calcularValorMulta(textarea) {
+      const artigos = textarea.value.split('\n');
+      let valorTotalMulta = 0;
+
+      for (const artigo of artigos) {
+        if (valoresMulta.hasOwnProperty(artigo.trim())) {
+          valorTotalMulta += valoresMulta[artigo.trim()];
+        }
+      }
+
+      const valorMultaInput = textarea.parentNode.querySelector('input[name="valor_multa[]"]');
+      valorMultaInput.value = formatarValor(valorTotalMulta);
     }
 
     // Função para ordenar os artigos em ordem crescente
